@@ -7,6 +7,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
@@ -32,52 +33,33 @@ struct FtpCtrlTask {
 
     void print() const
     {
-        std::cout << "TaskId: " << taskId << "\tPort: " << port << "\tIPAddress: " << ipAddress << "\tUserName: " << userName << "\tPassword: " << password << "\tRemotePath: " << remotePath << "\tLocalPath: " << localPath << "\tBackPath: " << backPath << "\tPutEnable: " << (int)putEnable << "\tGetEnable: " << (int)getEnable << "\tBackEnable: " << (int)backEnable << "\tFileType: " << fileType << std::endl;
+        std::cout << "TaskId: " << taskId << "\tPort: " << port
+                  << "\tIPAddress: " << ipAddress << "\tUserName: " << userName
+                  << "\tPassword: " << password << "\tRemotePath: " << remotePath
+                  << "\tLocalPath: " << localPath << "\tBackPath: " << backPath
+                  << "\tPutEnable: " << (int)putEnable
+                  << "\tGetEnable: " << (int)getEnable
+                  << "\tBackEnable: " << (int)backEnable
+                  << "\tFileType: " << fileType << std::endl;
     }
 };
 
 class FtpCtrl {
 public:
+    FtpCtrl(std::string configPath);
     ~FtpCtrl();
-    static FtpCtrl* getInstance()
-    {
-        static FtpCtrl ftpCtrl;
-        return &ftpCtrl;
-    }
 
     // 读取ftp配置文件并启动上传/下载任务线程
-    int init(std::string& configPath);
+    int init();
 
-    static int getFtpFile(const FtpCtrlTask&);
-    static int putFtpFile(const FtpCtrlTask&);
+    int getFtpFile(const FtpCtrlTask&);
+    int putFtpFile(const FtpCtrlTask&);
 
     std::vector<FtpCtrlTask> putFtpTasks;
     std::vector<FtpCtrlTask> getFtpTasks;
 
-    static void getFtpTasksThread()
-    {
-        while (true) {
-            for (const auto& task : FtpCtrl::getInstance()->getFtpTasks) {
-                auto iRet = FtpCtrl::getFtpFile(task);
-                std::cout << "getFtpFile : " << iRet << std::endl;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    }
-
-    static std::thread putFtpTasksThread()
-    {
-        while (true) {
-            for (const auto& task : FtpCtrl::getInstance()->putFtpTasks) {
-                auto iRet = FtpCtrl::putFtpFile(task);
-                std::cout << "putFtpFile : " << iRet << std::endl;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    }
-
 private:
-    embeddedmz::CFTPClient* m_ftpClient;
+    std::unique_ptr<embeddedmz::CFTPClient> m_ftpClient;
 
     std::string ftpConfigFilePath;
 };
